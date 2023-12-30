@@ -1,6 +1,6 @@
 name: CI
 
-on: push
+on: ["push", "workflow_call"]
 
 env:
   DOCKER_IMAGE_NAME_AND_TAG: ${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-${{ github.sha }}
