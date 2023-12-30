@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for SonarQube project keys"
+paths = [
+  '''sonar-project.properties'''
+]

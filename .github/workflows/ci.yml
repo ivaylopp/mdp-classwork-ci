@@ -1,0 +1,188 @@
+name: CI
+
+on: push
+
+env:
+  DOCKER_IMAGE_NAME_AND_TAG: ${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-${{ github.sha }}
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  editorconfig-checker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Load editorconfig-checker
+        uses: editorconfig-checker/action-editorconfig-checker@main
+
+      - name: Run editorconfig-checker
+        run: editorconfig-checker
+
+
+  markdownlint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Run markdownlint
+        uses: articulate/actions-markdownlint@v1
+
+
+  flake8:
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Install flake8
+        run: sudo apt-get update && sudo apt-get install flake8
+
+      - name: Run flake8
+      # W191: indentation contains tabs
+        run: flake8 --max-line-length=120 --ignore=W191 ./src/app.py
+
+
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Install Python
+        run: sudo apt-get update && sudo apt-get install python3
+
+      - name: Install requirements
+        run: pip3 install -r src/requirements.txt
+
+      - name: Run tests
+        run: python3 -m unittest discover -s ./src -p '*_test.py'
+
+
+  build:
+    needs: [flake8, editorconfig-checker, markdownlint, gitleaks, unit-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Build the Docker image
+        run: docker build -t ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }} -f Dockerfile-alpine .
+
+      - name: Log in to the GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+
+      - name: Push the Docker image
+        run: docker push ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+
+
+  trivy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Run trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL
+
+
+  sonarcloud:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+  snyk:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repositoryg
+        uses: actions/checkout@v3
+
+      - name: Run Snyk
+        working-directory: ${{github.workspace}}/src
+        run: |
+          pip install -r requirements.txt
+          npm install -g snyk
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+          snyk test
+
+
+  flyway:
+    needs: build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - uses: joshuaavalon/flyway-action@v3.0.0
+        with:
+          url: jdbc:postgresql://postgres:5432/db
+          user: user
+          password: password
+          locations: filesystem:src/migrations
+
+
+  upload-to-dockerhub:
+    needs: [sonarcloud, trivy, snyk, flyway]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pull from GitHub Container Registry
+        run: docker pull ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+
+      - name: Re-tag image for Dockerhub
+        run: docker tag ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }} ${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+
+      - name: Log in to dockerhub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Push the Docker image
+        run: docker push ${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
