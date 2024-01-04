@@ -56,7 +56,7 @@ jobs:
 
 
   flake8:
-    if: ${{ github.event.inputs.language == 'python' }}
+    if: ${{ inputs.language == 'python' }}
     runs-on: ubuntu-latest
   
     steps:
@@ -72,7 +72,7 @@ jobs:
 
 
   unit-tests-python:
-    if: ${{ github.event.inputs.language == 'python' }}
+    if: ${{ inputs.language == 'python' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -90,9 +90,9 @@ jobs:
 
 
   unit-tests-java:
-    if: ${{ github.event.inputs.language == 'java' }}
+    if: ${{ inputs.language == 'java' }}
     runs-on: ubuntu-latest
-    container: ${{ github.event.inputs.java-version }}-jdk-alpine
+    container: ${{ inputs.java-version }}-jdk-alpine
 
     steps:
       - name: Checkout the repository
