@@ -55,20 +55,39 @@ jobs:
         uses: articulate/actions-markdownlint@v1
 
 
-  flake8:
-    if: ${{ inputs.language == 'python' }}
+  stylelint:
     runs-on: ubuntu-latest
   
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
 
-      - name: Install flake8
-        run: sudo apt-get update && sudo apt-get install flake8
+      - name: Python lint
+        if: ${{ inputs.language == 'python' }}
+        # W191: indentation contains tabs
+        run: |
+          sudo apt-get update && sudo apt-get install flake8
+          flake8 --max-line-length=120 --ignore=W191 ./src/app.py
 
-      - name: Run flake8
-      # W191: indentation contains tabs
-        run: flake8 --max-line-length=120 --ignore=W191 ./src/app.py
+
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      
+      - name: Run Python tests
+        if: ${{ inputs.language == 'python' }}
+        run: |
+          sudo apt-get update && sudo apt-get install python3
+          pip3 install -r src/requirements.txt
+          python3 -m unittest discover -s ./src -p '*_test.py'
+      
+      - name: Run Java tests
+        if: ${{ inputs.language == 'java' }}
+        uses: docker://maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
+        run: mvn test
 
 
   unit-tests-python:
@@ -103,7 +122,7 @@ jobs:
 
 
   build:
-    needs: [flake8, editorconfig-checker, markdownlint, gitleaks, unit-tests-python, unit-tests-java]
+    needs: [stylelint, editorconfig-checker, markdownlint, gitleaks, unit-tests]
     runs-on: ubuntu-latest
     permissions:
       packages: write
