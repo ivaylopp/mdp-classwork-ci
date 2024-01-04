@@ -1,6 +1,13 @@
 name: CI
 
-on: ["push", "workflow_call"]
+on:
+  push:
+  workflow_call:
+    inputs:
+      language:
+        type: string
+        required: true
+        default: "python"
 
 env:
   DOCKER_IMAGE_NAME_AND_TAG: ${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-${{ github.sha }}
@@ -87,7 +94,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build the Docker image
-        run: docker build -t ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }} -f Dockerfile-alpine .
+        run: docker build -t ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }} .
 
       - name: Log in to the GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
