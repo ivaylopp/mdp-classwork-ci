@@ -92,7 +92,7 @@ jobs:
   unit-tests-java:
     if: ${{ inputs.language == 'java' }}
     runs-on: ubuntu-latest
-    container: ${{ inputs.java-version }}-jdk-alpine
+    container: openjdk:${{ inputs.java-version }}-jdk-alpine
 
     steps:
       - name: Checkout the repository
