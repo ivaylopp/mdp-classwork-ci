@@ -86,8 +86,7 @@ jobs:
       
       - name: Run Java tests
         if: ${{ inputs.language == 'java' }}
-        uses: docker://maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
-        run: mvn test
+        run: docker run --rm -it -v ./:/testdir -w /testdir maven:3.9.6-amazoncorretto-${{ inputs.java-version }} -- mvn test
 
 
   unit-tests-python:
