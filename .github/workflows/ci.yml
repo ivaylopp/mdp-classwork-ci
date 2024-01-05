@@ -4,10 +4,6 @@ on:
   push:
   workflow_call:
     inputs:
-      language:
-        type: string
-        required: true
-        default: "python"
       java-version:
         type: string
         required: false
@@ -55,59 +51,7 @@ jobs:
         uses: articulate/actions-markdownlint@v1
 
 
-  stylelint:
-    runs-on: ubuntu-latest
-  
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Python lint
-        if: ${{ inputs.language == 'python' }}
-        # W191: indentation contains tabs
-        run: |
-          sudo apt-get update && sudo apt-get install flake8
-          flake8 --max-line-length=120 --ignore=W191 ./src/app.py
-
-
   unit-tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-      
-      - name: Run Python tests
-        if: ${{ inputs.language == 'python' }}
-        run: |
-          sudo apt-get update && sudo apt-get install python3
-          pip3 install -r src/requirements.txt
-          python3 -m unittest discover -s ./src -p '*_test.py'
-      
-      - name: Run Java tests
-        if: ${{ inputs.language == 'java' }}
-        run: docker run --rm -v ./:/testdir -w /testdir maven:3.9.6-amazoncorretto-${{ inputs.java-version }} -- mvn test
-
-
-  unit-tests-python:
-    if: ${{ inputs.language == 'python' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Install Python
-        run: sudo apt-get update && sudo apt-get install python3
-
-      - name: Install requirements
-        run: pip3 install -r src/requirements.txt
-
-      - name: Run tests
-        run: python3 -m unittest discover -s ./src -p '*_test.py'
-
-
-  unit-tests-java:
     if: ${{ inputs.language == 'java' }}
     runs-on: ubuntu-latest
     container: maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
@@ -121,7 +65,7 @@ jobs:
 
 
   build:
-    needs: [stylelint, editorconfig-checker, markdownlint, gitleaks, unit-tests]
+    needs: [editorconfig-checker, markdownlint, gitleaks, unit-tests]
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -185,7 +129,6 @@ jobs:
       - name: Run Snyk
         working-directory: ${{github.workspace}}/src
         run: |
-          pip install -r requirements.txt
           npm install -g snyk
           snyk auth ${{ secrets.SNYK_TOKEN }}
           snyk test
@@ -211,7 +154,7 @@ jobs:
           url: jdbc:postgresql://postgres:5432/db
           user: user
           password: password
-          locations: filesystem:src/migrations
+          locations: filesystem:src/main/resources/db/migrations
 
 
   upload-to-dockerhub:
