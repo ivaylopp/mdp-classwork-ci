@@ -52,7 +52,6 @@ jobs:
 
 
   unit-tests:
-    if: ${{ inputs.language == 'java' }}
     runs-on: ubuntu-latest
     container: maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
 
