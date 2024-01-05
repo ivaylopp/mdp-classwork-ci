@@ -111,10 +111,7 @@ jobs:
           fetch-depth: 0
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn clean verify sonar:sonar -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
 
   snyk:
@@ -126,7 +123,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run Snyk
-        working-directory: ${{github.workspace}}/src
         run: |
           npm install -g snyk
           snyk auth ${{ secrets.SNYK_TOKEN }}
