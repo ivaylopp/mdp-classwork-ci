@@ -103,6 +103,7 @@ jobs:
   sonarcloud:
     needs: build
     runs-on: ubuntu-latest
+    container: maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
 
     steps:
       - name: Checkout the repository
