@@ -115,7 +115,8 @@ jobs:
         run: |
           mvn clean verify sonar:sonar \
           -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dproject.settings=./sonar-project.properties
 
 
   snyk:
