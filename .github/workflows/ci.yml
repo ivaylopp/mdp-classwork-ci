@@ -104,6 +104,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     container: maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
+    env:
+      SONAR_ORGANIZATION: sonar365892
+      SONAR_PROJECT_KEY: sonar365892_sonar365892
 
     steps:
       - name: Checkout the repository
@@ -116,7 +119,8 @@ jobs:
           mvn clean verify sonar:sonar \
           -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
           -Dsonar.host.url=https://sonarcloud.io \
-          -Dproject.settings=./sonar-project.properties
+          -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
+          -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
 
 
   snyk:
