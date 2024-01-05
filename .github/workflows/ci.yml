@@ -3,15 +3,6 @@ name: CI
 on:
   push:
   workflow_call:
-    inputs:
-      language:
-        type: string
-        required: true
-        default: "python"
-      java-version:
-        type: string
-        required: false
-        default: "17"
 
 env:
   DOCKER_IMAGE_NAME_AND_TAG: ${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref_name }}-${{ github.sha }}
@@ -55,7 +46,7 @@ jobs:
         uses: articulate/actions-markdownlint@v1
 
 
-  stylelint:
+  flake8:
     runs-on: ubuntu-latest
   
     steps:
@@ -63,7 +54,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Python lint
-        if: ${{ inputs.language == 'python' }}
         # W191: indentation contains tabs
         run: |
           sudo apt-get update && sudo apt-get install flake8
@@ -78,50 +68,14 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Run Python tests
-        if: ${{ inputs.language == 'python' }}
         run: |
           sudo apt-get update && sudo apt-get install python3
           pip3 install -r src/requirements.txt
           python3 -m unittest discover -s ./src -p '*_test.py'
-      
-      - name: Run Java tests
-        if: ${{ inputs.language == 'java' }}
-        run: docker run --rm -v ./:/testdir -w /testdir maven:3.9.6-amazoncorretto-${{ inputs.java-version }} -- mvn test
-
-
-  unit-tests-python:
-    if: ${{ inputs.language == 'python' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Install Python
-        run: sudo apt-get update && sudo apt-get install python3
-
-      - name: Install requirements
-        run: pip3 install -r src/requirements.txt
-
-      - name: Run tests
-        run: python3 -m unittest discover -s ./src -p '*_test.py'
-
-
-  unit-tests-java:
-    if: ${{ inputs.language == 'java' }}
-    runs-on: ubuntu-latest
-    container: maven:3.9.6-amazoncorretto-${{ inputs.java-version }}
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Run tests with Maven
-        run: mvn test
 
 
   build:
-    needs: [stylelint, editorconfig-checker, markdownlint, gitleaks, unit-tests]
+    needs: [flake8, editorconfig-checker, markdownlint, gitleaks, unit-tests]
     runs-on: ubuntu-latest
     permissions:
       packages: write
