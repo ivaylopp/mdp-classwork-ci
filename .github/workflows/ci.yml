@@ -177,3 +177,29 @@ jobs:
 
       - name: Push the Docker image
         run: docker push ${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+
+
+  deploy-to-k8s:
+    if: github.ref == 'refs/heads/main'
+    needs: [ upload-to-dockerhub ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Set the Kubernetes context
+        uses: azure/k8s-set-context@v2
+        with:
+          method: service-account
+          k8s-url: https://66b99a9b-2c70-47d0-af98-53c96d0212b9.k8s.ondigitalocean.com
+          k8s-secret: ${{ secrets.K8S_SECRET }}
+
+      - name: Deploy to the Kubernetes cluster
+        uses: azure/k8s-deploy@v1
+        with:
+          namespace: ns1
+          manifests: |
+            kubernetes/deployment.yaml
+          images: |
+            ${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
