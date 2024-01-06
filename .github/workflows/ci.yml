@@ -80,9 +80,6 @@ jobs:
           path: |
             /var/lib/docker
 
-      - name: Fix permissions
-        run: sudo chown -R 1001:1001 /var/lib/docker
-
       - name: Build the Docker image
         run: docker build -t ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }} .
 
@@ -91,6 +88,9 @@ jobs:
 
       - name: Push the Docker image
         run: docker push ghcr.io/${{ env.DOCKER_IMAGE_NAME_AND_TAG }}
+
+      - name: Fix permissions
+        run: sudo chown -R 1001:1001 /var/lib/docker
 
 
   trivy:
