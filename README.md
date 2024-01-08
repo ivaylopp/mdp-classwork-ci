@@ -4,6 +4,9 @@
 
 A project which stores a reusable GitHub Actions workflow. The `main` branch is a template workflow, which can easily be extended for different languages. See the other branches for examples for Python and Java applications.
 
+![image](https://github.com/ivaylopp/mdp-classwork-ci/assets/48100702/cc8e43be-f0c0-4671-86fc-161afc45589b)
+
+
 ## Workflow Stages
 
 The workflow is separated in multiple stages. Stages, which are comprised of one or more jobs, are defined in such a way to optimise the running time of the whole workflow.
